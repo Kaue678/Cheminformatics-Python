@@ -43,12 +43,12 @@ def calculate_properties(output_csv, output_sdf):
         mol.SetProp("_logP", str(logp))
         mol.SetProp("_HBA", str(hba))
         mol.SetProp("_HBD", str(hbd))
-        mol.SetProp("_NumRotBonds", str(rot_bonds))
-        mol.SetProp("_NumAromaticRings", str(num_aromatic_rings))
-        mol.SetProp("_NumOxygenAtoms", str(num_oxygen_atoms))
-        mol.SetProp("_NumNitrogenAtoms", str(num_nitrogen_atoms))
-        mol.SetProp("_TopologicalSurfaceArea", str(topological_surface_area))
-        mol.SetProp("_FractionSP3Carbons", str(fraction_sp3_carbons))
+        mol.SetProp("_RTB", str(rot_bonds))
+        mol.SetProp("_AR", str(num_aromatic_rings))
+        mol.SetProp("_O", str(num_oxygen_atoms))
+        mol.SetProp("_N", str(num_nitrogen_atoms))
+        mol.SetProp("_tPSA", str(topological_surface_area))
+        mol.SetProp("_FSp3", str(fraction_sp3_carbons))
 
         # Write molecule to SDF file
         writer_sdf.write(mol)
@@ -64,7 +64,7 @@ def calculate_properties(output_csv, output_sdf):
     # Write data to CSV file
     with open(output_csv, 'w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(['Name', 'MolWt','logP', 'HBA', 'HBD', 'NumRotBonds', 'NumAromaticRings', 'NumOxygenAtoms', 'NumNitrogenAtoms', 'TopologicalSurfaceArea', 'FractionSP3Carbons'])
+        csv_writer.writerow(['Name', 'MolWt','logP', 'HBA', 'HBD', 'RTB', 'AR', 'O', 'N', 'tPSA', 'FSp3'])
         csv_writer.writerows(data)
 
     # Convert descriptors to numpy array for PCA
