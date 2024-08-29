@@ -1,69 +1,95 @@
-from rdkit import Chem
-from rdkit.Chem import Descriptors
-import csv
+from rdkit import Chem  
+from rdkit.Chem import Descriptors, rdMolDescriptors  
+from rdkit.Chem import rdmolops  
+import csv  
 
-def calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf):
-    """
-    Calculates various molecular descriptors for molecules in the 'repellent_library.sdf' file and saves the results in CSV and SDF files.
+def calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf):  
+    """  
+    Calculates various molecular descriptors for molecules in the 'repellent_library.sdf' file and saves the results in CSV and SDF files.  
 
-    Args:
-        output_csv: Path to the output CSV file.
-        output_sdf: Path to the output SDF file.
-    """
-    sdf_file = "repellent_library.sdf"
-    suppl = Chem.SDMolSupplier(sdf_file)
-    writer_sdf = Chem.SDWriter(molecular_descriptors_sdf)
+    Args:  
+        output_csv: Path to the output CSV file.  
+        output_sdf: Path to the output SDF file.  
+    """  
+    sdf_file = "repellent_library.sdf"  
+    suppl = Chem.SDMolSupplier(sdf_file)  
+    writer_sdf = Chem.SDWriter(molecular_descriptors_sdf)  
 
-    # Create a list to store the data for CSV output
-    data = []
+    # Create a list to store the data for CSV output  
+    data = []  
 
-    for mol in suppl:
-        if mol is None:
-            continue
+    for mol in suppl:  
+        if mol is None:  
+            continue  
 
-        # Calculate properties
-        mw = Descriptors.MolWt(mol)
-        logp = Descriptors.MolLogP(mol)
-        hba = Descriptors.NumHAcceptors(mol)
-        hbd = Descriptors.NumHDonors(mol)
-        rot_bonds = Descriptors.NumRotatableBonds(mol)
-        num_aromatic_rings = Descriptors.NumAromaticRings(mol)
-        num_oxygen_atoms = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])
-        num_nitrogen_atoms = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7])
-        topological_surface_area = Descriptors.TPSA(mol)
-        fraction_sp3_carbons = Descriptors.FractionCSP3(mol)
+        # Calculate properties  
+        mw = Descriptors.MolWt(mol)  
+        logp = Descriptors.MolLogP(mol)  
+        hba = Descriptors.NumHAcceptors(mol)  
+        hbd = Descriptors.NumHDonors(mol)  
+        rot_bonds = Descriptors.NumRotatableBonds(mol)  
+        num_aromatic_rings = Descriptors.NumAromaticRings(mol)  
+        num_oxygen_atoms = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])  
+        num_nitrogen_atoms = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7])  
 
-        # Calculate LogD at pH 7.4
-        logd_74 = logp - 0.4 * mol.GetNumAtoms()
+        # Count halogen atoms  
+        num_halogens = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [9, 17, 35, 53]])  
 
-        # Add properties as data fields to the molecule
-        mol.SetProp("_MolWt", str(mw))
-        mol.SetProp("_logP", str(logp))
-        mol.SetProp("_logD_7.4", str(logd_74))
-        mol.SetProp("_HBA", str(hba))
-        mol.SetProp("_HBD", str(hbd))
-        mol.SetProp("_RTB", str(rot_bonds))
-        mol.SetProp("_AR", str(num_aromatic_rings))
-        mol.SetProp("_O", str(num_oxygen_atoms))
-        mol.SetProp("_N", str(num_nitrogen_atoms))
-        mol.SetProp("_tPSA", str(topological_surface_area))
-        mol.SetProp("_FSp3", str(fraction_sp3_carbons))
+        # Calculate new descriptors  
+        vdw_volume = Descriptors.VDWVolume(mol)  
+        num_chiral_centers = rdMolDescriptors.CalcNumChiralCenters(mol)  
+        
+        # Compute Gasteiger Charges  
+        rdmolops.ComputeGasteigerCharges(mol)  
+        partial_charges = [atom.GetDoubleProp('GasteigerCharge') for atom in mol.GetAtoms()]  
+        
+        # Connectivity Index  
+        conn_index = rdMolDescriptors.CalcConnIndex(mol)  
 
-        # Write molecule to SDF file
-        writer_sdf.write(mol)
+        topological_surface_area = Descriptors.TPSA(mol)  
+        fraction_sp3_carbons = Descriptors.FractionCSP3(mol)  
 
-        # Append data to the list for CSV output
-        data.append([mol.GetProp("_Name"), mw, logp, logd_74, hba, hbd, rot_bonds, num_aromatic_rings, num_oxygen_atoms, num_nitrogen_atoms, topological_surface_area, fraction_sp3_carbons])
+        # Calculate LogD at pH 7.4  
+        logd_74 = logp - 0.4 * mol.GetNumAtoms()  
 
-    writer_sdf.close()
+        # Add properties as data fields to the molecule  
+        mol.SetProp("_MolWt", str(mw))  
+        mol.SetProp("_logP", str(logp))  
+        mol.SetProp("_logD_7.4", str(logd_74))  
+        mol.SetProp("_HBA", str(hba))  
+        mol.SetProp("_HBD", str(hbd))  
+        mol.SetProp("_RTB", str(rot_bonds))  
+        mol.SetProp("_AR", str(num_aromatic_rings))  
+        mol.SetProp("_O", str(num_oxygen_atoms))  
+        mol.SetProp("_N", str(num_nitrogen_atoms))  
+        mol.SetProp("_Halogens", str(num_halogens))  # Store halogens count  
+        mol.SetProp("_VDWVolume", str(vdw_volume))  # Van der Waals Volume  
+        mol.SetProp("_ChiralCenters", str(num_chiral_centers))  # Number of Chiral Centers  
+        mol.SetProp("_PartialCharges", str(partial_charges))  # List of partial charges  
+        mol.SetProp("_ConnIndex", str(conn_index))  # Connectivity Index  
+        mol.SetProp("_tPSA", str(topological_surface_area))  
+        mol.SetProp("_FSp3", str(fraction_sp3_carbons))  
 
-    # Write data to CSV file
-    with open(molecular_descriptors_csv, 'w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(['Name', 'MolWt', 'logP', 'logD_7.4', 'HBA', 'HBD', 'RTB', 'AR', 'O', 'N', 'tPSA', 'FSp3'])
-        csv_writer.writerows(data)
+        # Write molecule to SDF file  
+        writer_sdf.write(mol)  
 
-# Example usage
-molecular_descriptors_csv = "molecular_descriptors.csv"
-molecular_descriptors_sdf = "molecular_descriptors.sdf"
+        # Append data to the list for CSV output  
+        data.append([  
+            mol.GetProp("_Name"), mw, logp, logd_74, hba, hbd, rot_bonds,  
+            num_aromatic_rings, num_oxygen_atoms, num_nitrogen_atoms,  
+            num_halogens, vdw_volume, num_chiral_centers,  
+            str(partial_charges), conn_index, topological_surface_area, fraction_sp3_carbons  
+        ])  
+
+    writer_sdf.close()  
+
+    # Write data to CSV file  
+    with open(molecular_descriptors_csv, 'w', newline='') as csvfile:  
+        csv_writer = csv.writer(csvfile)  
+        csv_writer.writerow(['Name', 'MolWt', 'logP', 'logD_7.4', 'HBA', 'HBD', 'RTB', 'AR', 'O', 'N', 'Halogens', 'VDWVolume', 'ChiralCenters', 'PartialCharges', 'ConnIndex', 'tPSA', 'FSp3'])  
+        csv_writer.writerows(data)  
+
+# Example usage  
+molecular_descriptors_csv = "molecular_descriptors.csv"  
+molecular_descriptors_sdf = "molecular_descriptors.sdf"  
 calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf)
