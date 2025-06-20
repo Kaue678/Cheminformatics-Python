@@ -37,9 +37,6 @@ def calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf):
         num_aliphatic_rings = Descriptors.NumAliphaticRings(mol)  
         num_stereocenters = rdMolDescriptors.CalcNumAtomStereoCenters(mol)  # Corrected method for stereocenters  
 
-        # LogD at pH 5.0 - modified to a placeholder calculation  
-        logd_5 = logp - 0.4 * mol.GetNumAtoms()  # Example of a rough estimation  
-
         # Calculate number of heteroatoms  
         num_heteroatoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [6, 1])  # Exclude C (6) and H (1)  
         
