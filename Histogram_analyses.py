@@ -23,7 +23,6 @@ def calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf):
     properties = {  
         'MolWt': [],  
         'logP': [],  
-        'logD_7.4': [],  
         'HBA': [],  
         'HBD': [],  
         'RTB': [],  
@@ -57,14 +56,12 @@ def calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf):
         num_aliphatic_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and not atom.GetIsAromatic())  
         num_aliphatic_rings = Descriptors.NumAliphaticRings(mol)  
         num_stereocenters = rdMolDescriptors.CalcNumAtomStereoCenters(mol)  # Corrected method for stereocenters  
-        logd_5 = logp - 0.4 * mol.GetNumAtoms()  # Placeholder calculation  
         num_heteroatoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [6, 1])  # Exclude C (6) and H (1)  
 
         # Compute Gasteiger Charges  
         Chem.rdPartialCharges.ComputeGasteigerCharges(mol)  
         topological_surface_area = Descriptors.TPSA(mol)  
         fraction_sp3_carbons = Descriptors.FractionCSP3(mol)  
-        logd_74 = logp - 0.4 * mol.GetNumAtoms()  
 
         # Add properties as data fields to the molecule  
         mol.SetProp("_MolWt", str(mw))  
@@ -92,8 +89,7 @@ def calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf):
             mol.GetProp("_Name"), mw, logp, logd_74, hba, hbd, rot_bonds,  
             num_aromatic_rings, num_oxygen_atoms, num_nitrogen_atoms,  
             num_halogens, topological_surface_area, fraction_sp3_carbons,  
-            num_aliphatic_carbons, num_aliphatic_rings, num_stereocenters,  
-            logd_5, num_heteroatoms  
+            num_aliphatic_carbons, num_aliphatic_rings, num_stereocenters, num_heteroatoms  
         ])  
 
         # Store properties for histogram  
@@ -112,7 +108,6 @@ def calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf):
         properties['AliphaticC'].append(num_aliphatic_carbons)  
         properties['AliphaticRings'].append(num_aliphatic_rings)  
         properties['Stereocenters'].append(num_stereocenters)  
-        properties['LogD_5'].append(logd_5)  
         properties['Heteroatoms'].append(num_heteroatoms)  
 
     writer_sdf.close()  
@@ -123,7 +118,7 @@ def calculate_properties(molecular_descriptors_csv, molecular_descriptors_sdf):
         csv_writer.writerow(['Name', 'MolWt', 'logP', 'logD_7.4', 'HBA', 'HBD', 'RTB',  
                              'AR', 'O', 'N', 'Halogens', 'tPSA', 'FSp3',  
                              'AliphaticC', 'AliphaticRings', 'Stereocenters',  
-                             'LogD_5', 'Heteroatoms'])  
+                             'Heteroatoms'])  
         csv_writer.writerows(data)  
 
     # Generate histograms for each property  
